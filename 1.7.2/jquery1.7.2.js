@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-06 17:44:59
+ * @Last Modified time: 2018-10-06 19:14:44
  */
 
 
@@ -14,7 +14,7 @@
  *
  * Copyright 2011, John Resig
  * Dual licensed under the MIT or GPL Version 2 licenses.
- * http://jquery.org/license
+ * http://jquery.org/license  
  *
  * Includes Sizzle.js
  * http://sizzlejs.com/
@@ -31,6 +31,11 @@
  * 
  * 设置参数 window 是为了使 window 对象成为局部变量，在 jQuery 内部代码访问 window 对象时，就不用将作用域链回退到顶部作用域，
  * 从而更快地访问 window 对象。另外还可以在压缩代码时对其进行优化。
+ * 
+ * 特殊值 undefined 是 window 对象的一个属性，通过把参数 undefined 作为局部变量使用，但是又不传入任何值，可以缩短寻找 undefined 
+ * 时的作用域链，并且可以在压缩代码时进行优化。 另一个重要的原因是，通过这种方式可以确保 undefined 的值是 undefined
+ * 
+ * 使用自调用匿名函数时，最好不要省略自调用匿名函数之前和之后的分号。因为省略后在以后的代码压缩时可能会引起语法错误。
  */
 (function (window, undefined) {
 
