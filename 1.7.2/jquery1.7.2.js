@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-06 19:14:44
+ * @Last Modified time: 2018-10-07 10:58:17
  */
 
 
@@ -43,14 +43,33 @@
   var document = window.document,
     navigator = window.navigator,
     location = window.location;
+
+  /* ======================================================================================
+    构建 jQuery 构造函数
+    ====================================================================================== */
+
+  /**
+   * 构建 jQuery 构造函数时仍采用自调用匿名函数的形式，主要模块中还定义了很多其他的局部变量，这些局部变量只在构造
+   * jQuery 对象模块的内部使用，通过把这些局部变量包裹在一个自调用匿名函数中，实现了高内聚低耦合的设计思想
+   */
   var jQuery = (function () {
 
-    // 构建 jQuery 对象
+    /**
+     * 定义 jQuery 构造函数，通过在构造函数 jquery 内部用运算符 new 创建并返回另一个构造函数的实例，省去了
+     * 构造函数 jQuery() 前面的运算符 new。主要是为了使用方便，如后面为 jQuery 定义了别名 $ ，也是同样的原因。
+     */
+
     // Define a local copy of jQuery
     var jQuery = function (selector, context) {
+
+        // 解析参数 selector 和 context 的类型并执行相应的查找。根据参数不同构建不同的 jQuery 对象实现重载
         // The jQuery object is actually just the init constructor 'enhanced'
         return new jQuery.fn.init(selector, context, rootjQuery);
       },
+
+      /**
+       * 定义局部变量声明
+       */
 
       // Map over jQuery in case of overwrite
       _jQuery = window.jQuery,
@@ -119,7 +138,15 @@
       // [[Class]] -> type pairs
       class2type = {};
 
+
+    /**
+     * 重写了 jQuery.prototype，jQuery.prototype 上定义的属性和方法会被所有 jQuery 对象所继承，
+     * 可以有效减少每个 jQuery 对象所需要的内存。
+     * 
+     * jQuery.fn 是 jQuery.prototype 的别名，主要是为了方便拼写和使用
+     */
     jQuery.fn = jQuery.prototype = {
+      // 使 constructor 重新指向 jQuery 构造函数
       constructor: jQuery,
       init: function (selector, context, rootjQuery) {
         var match, elem, ret, doc;
@@ -230,6 +257,10 @@
 
         return jQuery.makeArray(selector, this);
       },
+
+      /**
+       * 定义原型属性和方法
+       */
 
       // Start with an empty selector
       selector: "",
@@ -343,9 +374,17 @@
       splice: [].splice
     };
 
+    /**
+     * 用构造函数 jQuery.fn 的覆盖了 jQuery.fn.init 的原型，主要是因为 jQuery 构造函数返回的是 jQuery.fn.init 的
+     * 实例，因此需要覆盖 jQuery.fn.init 的原型，来使这个实例能够访问到 jQuery 构造函数的原型的属性和方法
+     */
     // Give the init function the jQuery prototype for later instantiation
     jQuery.fn.init.prototype = jQuery.fn;
 
+
+    /**
+     * 定义 extend 方法，用于合并两个或多个对象的属性到第一个对象
+     */
     jQuery.extend = jQuery.fn.extend = function () {
       var options, name, src, copy, copyIsArray, clone,
         target = arguments[0] || {},
@@ -410,7 +449,11 @@
       return target;
     };
 
+    /**
+     * 定义静态属性和方法
+     */
     jQuery.extend({
+    
       noConflict: function (deep) {
         if (window.$ === jQuery) {
           window.$ = _$;
@@ -1010,6 +1053,9 @@
 
   })();
 
+  /* ======================================================================================
+     其他模块
+     ====================================================================================== */
 
   // String to Object flags format cache
   var flagsCache = {};
