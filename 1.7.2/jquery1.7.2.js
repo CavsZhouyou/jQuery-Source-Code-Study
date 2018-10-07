@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-07 10:58:17
+ * @Last Modified time: 2018-10-07 21:25:36
  */
 
 
@@ -26,16 +26,17 @@
 
 
 /**
+ * @description 
  * 通过定义一个自调用匿名函数，创建了一个“私有”的命名空间，该命名空间的变量和方法，不会破坏全局的命名空间。
  * 这点非常有用也是一个JS框架必须支持的功能，必须确保 jQuery 创建的变量不能和导入他的程序所使用的变量发生冲突。
  * 
+ * @param {Object} window
  * 设置参数 window 是为了使 window 对象成为局部变量，在 jQuery 内部代码访问 window 对象时，就不用将作用域链回退到顶部作用域，
  * 从而更快地访问 window 对象。另外还可以在压缩代码时对其进行优化。
  * 
+ * @param {undefined} undefined
  * 特殊值 undefined 是 window 对象的一个属性，通过把参数 undefined 作为局部变量使用，但是又不传入任何值，可以缩短寻找 undefined 
  * 时的作用域链，并且可以在压缩代码时进行优化。 另一个重要的原因是，通过这种方式可以确保 undefined 的值是 undefined
- * 
- * 使用自调用匿名函数时，最好不要省略自调用匿名函数之前和之后的分号。因为省略后在以后的代码压缩时可能会引起语法错误。
  */
 (function (window, undefined) {
 
@@ -59,6 +60,21 @@
      * 构造函数 jQuery() 前面的运算符 new。主要是为了使用方便，如后面为 jQuery 定义了别名 $ ，也是同样的原因。
      */
 
+
+    /**
+     * @description
+     * 定义 jQuery 构造函数，通过在构造函数 jquery 内部用运算符 new 创建并返回另一个构造函数的实例，省去了
+     * 构造函数 jQuery() 前面的运算符 new。主要是为了使用方便，如后面为 jQuery 定义了别名 $ ，也是同样的原因。
+     * 
+     * @param {*} selector 
+     * 输入选择值，任意类型的值，根据不同类型创建不同的 jQuery 对象
+     * 
+     * @param {*} context  
+     * 根据不同的 selector 类型代表不同含义，可为空 
+     * 
+     * @returns jQuery 实例
+     */
+
     // Define a local copy of jQuery
     var jQuery = function (selector, context) {
 
@@ -80,6 +96,12 @@
       // A central reference to the root jQuery(document)
       rootjQuery,
 
+
+      /**
+       * 正则表达式 quickExpr 用于检测参数 selector 是否为复杂一些的 html 片段或 #id
+       * 
+       * 优化 #id 开始的字符串，为了避免基于 location.hash 的 XSS 攻击
+       */
       // A simple way to check for HTML strings or ID strings
       // Prioritize #id over <tag> to avoid XSS via location.hash (#9521)
       quickExpr = /^(?:[^#<]*(<[\w\W]+>)[^>]*$|#([\w\-]*)$)/,
@@ -91,6 +113,7 @@
       trimLeft = /^\s+/,
       trimRight = /\s+$/,
 
+      // 正则表达式 rsingleTag 用检测 html 片段是否是单独标签
       // Match a standalone tag
       rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>)?$/,
 
@@ -146,16 +169,44 @@
      * jQuery.fn 是 jQuery.prototype 的别名，主要是为了方便拼写和使用
      */
     jQuery.fn = jQuery.prototype = {
+
       // 使 constructor 重新指向 jQuery 构造函数
       constructor: jQuery,
-      init: function (selector, context, rootjQuery) {
-        var match, elem, ret, doc;
 
+      /**
+       * @description 
+       * 解析参数 selector 和 context 的类型，并执行相应的逻辑，最后返回一个实例
+       * 
+       * @param {*} selector 
+       * 输入选择值，任意类型的值，根据不同类型创建不同的 jQuery 对象
+       * 
+       * @param {*} context  
+       * 根据不同的 selector 类型代表不同含义，可为空
+       * 
+       * @param {jQuery} rootjQuery 
+       * 包含了 document 对象的 jQuery 对象，是 jQuery 内部的私有变量，主要用于处理意外情况下的 jQuery 对象创建 
+       * 
+       * @returns jQuery 实例
+       */
+      init: function (selector, context, rootjQuery) {
+        var match, // 验证复杂字符串时，保存正则匹配后的结果
+          elem,
+          ret, // 判断是否为单标签，保存正则匹配后的结果
+          doc; // 判断所创建 jQuery 对象所在的文档
+
+        /**
+         * 处理 selector 为空值、无效值时的情况
+         */
         // Handle $(""), $(null), or $(undefined)
         if (!selector) {
           return this;
         }
 
+
+        /**
+         * 处理 selector 为 DOM 元素时的情况
+         * 如果参数 selector 有属性 nodeType，则认为 selector 是 DOM 元素
+         */
         // Handle $(DOMElement)
         if (selector.nodeType) {
           this.context = this[0] = selector;
@@ -163,6 +214,9 @@
           return this;
         }
 
+        /**
+         * 处理 selector 是字符串 body 的情况
+         */
         // The body element only exists once, optimize finding it
         if (selector === "body" && !context && document.body) {
           this.context = document;
@@ -172,30 +226,77 @@
           return this;
         }
 
+        /**
+         * 处理 selector 是 html 字符串的情况
+         */
         // Handle HTML strings
         if (typeof selector === "string") {
+
+          /**
+           * 判断 selector 是 html 片段还是 #id
+           */
+
           // Are we dealing with HTML string or an ID?
           if (selector.charAt(0) === "<" && selector.charAt(selector.length - 1) === ">" && selector.length >= 3) {
+
+            // 如果参数 selector 以“<”开头，以“>”结尾，且长度大于3，则假设这个字符串时 html 片段，再具体判断
             // Assume that strings that start and end with <> are HTML and skip the regex check
             match = [null, selector, null];
 
           } else {
+
+            /**
+             * 否则，用正则 quickExpr 检测参数 selector 是否为复杂一些的 html 片段或#id，匹配结果放在数组 match 中
+             * 
+             * 数组 match 的第一个元素为参数 selector ，第二个元素为参数匹配的 html 字段或 undefined，第三个元素为匹配的
+             * id 或 undefined 。
+             * 
+             * 第二个元素和第三个元素只有一个有值，另一个为 undefined
+             */
             match = quickExpr.exec(selector);
           }
+
+          /**
+           * 检测正则 quickExpr 匹配参数的结果，处理如果 match 不是 null，且 match[1] 不是 undefined ,即参数是 html 片段
+           * 或者 match[2] 不是undefined，即参数是#id， 且未传入参数 context 的情况
+           * 
+           * if (match && (match[1] || !context)) 等价于 if (match && (match[1] || (match[2] && !context)))
+           * 判断时作了简单的化简
+           */
 
           // Verify a match, and that no context was specified for #id
           if (match && (match[1] || !context)) {
 
+            /**
+             * 处理如果是 html 片段的情况
+             */
             // HANDLE: $(html) -> $(array)
             if (match[1]) {
+
+              // 获取正确的 context 参数
               context = context instanceof jQuery ? context[0] : context;
+
+              // 获取正确的文档环境
               doc = (context ? context.ownerDocument || context : document);
 
+              // 用 rsingleTag 检测 html 片段是否是单独标签，匹配结果放在数组 ret 中。
               // If a single string is passed in and it's a single tag
               // just do a createElement and skip the rest
               ret = rsingleTag.exec(selector);
 
+              /**
+               * 处理如果是单独标签的情况
+               */
               if (ret) {
+
+                /**
+                 * 首先判断 context 是否为存粹对象，如果是，则在此种情况下 context 的作用
+                 * 为 selector 的 props 属性对象，用于在创建 DOM 对象后，为其添加相应的属性和方法
+                 * 如果不是，则只创建对象
+                 * 
+                 * 将创建好的 DOM 元素放入数组中，主要是为了更好调用 jQuery.merge() 方法进行合并
+                 */
+
                 if (jQuery.isPlainObject(context)) {
                   selector = [document.createElement(ret[1])];
                   jQuery.fn.attr.call(selector, context, true);
@@ -204,16 +305,43 @@
                   selector = [doc.createElement(ret[1])];
                 }
 
+                /**
+                 * 处理参数如果是复杂 html 片段的情况
+                 */
               } else {
+
+                /**
+                 * 创建过程由 jQuery.buildFragment() 和 jQuery.clean() 方法实现
+                 * 
+                 * ret 接收返回值一个对象，包含了参数fragment： 含有转换后的 DOM 元素的文档片段，
+                 * 和参数 cacheable：html 片段是否满足缓存条件
+                 * 
+                 * 如果 html 片段满足缓存条件，则在使用转换后的 DOM 元素时，必须先复制一份再使用 
+                 */
+
                 ret = jQuery.buildFragment([match[1]], [doc]);
                 selector = (ret.cacheable ? jQuery.clone(ret.fragment) : ret.fragment).childNodes;
               }
 
+              // 返回合并后的实例对象
               return jQuery.merge(this, selector);
 
+
+              /**
+               *  处理 selector 是 #id 且未指定参数 context 的情况
+               */
               // HANDLE: $("#id")
             } else {
+
               elem = document.getElementById(match[2]);
+
+              /**
+               * 首先检查元素是否查找成功，然后检查其 parentNode 属性是否存在，因为 Blackberry 4.6 会返回已经
+               * 不在文档中的 DOM 节点。
+               * 
+               * 然后检查所找到的元素的属性 id 值与传入的值是否相等，这是考虑浏览器的兼容问题，因为在 IE6、7和某些版本
+               * 的 Opera 中，可能会按属性 name 查找而不是 id
+               */
 
               // Check parentNode to catch when Blackberry 4.6 returns
               // nodes that are no longer in the document #6963
@@ -234,6 +362,15 @@
               return this;
             }
 
+            /**
+             * 处理 selector 是选择器表达式的情况
+             * 
+             * 如果指定了 context ，且 context 是 jQuery 对象的情况，则执行 context.find(selector)
+             * 如果不是，则执行 this.constructor(context).find(selector)
+             * 
+             * 如果没有指定 context ，则执行 rootjQuery.find(selector)
+             */
+            // 
             // HANDLE: $(expr, $(...))
           } else if (!context || context.jquery) {
             return (context || rootjQuery).find(selector);
@@ -244,17 +381,31 @@
             return this.constructor(context).find(selector);
           }
 
+          /** 
+           * 处理参数 selector 是函数的情况
+           */
           // HANDLE: $(function)
           // Shortcut for document ready
         } else if (jQuery.isFunction(selector)) {
           return rootjQuery.ready(selector);
         }
 
+        /**
+         * 处理参数 selector 是 jQuery 对象的情况
+         */
         if (selector.selector !== undefined) {
           this.selector = selector.selector;
           this.context = selector.context;
         }
 
+        /**
+         * 处理参数 selector 是 任意其他值的情况
+         * 
+         * 如果 selector 是数组或伪数组，则都添加到当前 jQuery 对象中，
+         * 如果 selector 是 JavaScript 对象或者其他类型的值，则作为第一个元素放入当前的 jQuery 对象中
+         * 
+         * 最后返回当前对象
+         */
         return jQuery.makeArray(selector, this);
       },
 
@@ -453,7 +604,7 @@
      * 定义静态属性和方法
      */
     jQuery.extend({
-    
+
       noConflict: function (deep) {
         if (window.$ === jQuery) {
           window.$ = _$;
