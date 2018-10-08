@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-08 10:43:01
+ * @Last Modified time: 2018-10-08 22:40:17
  */
 
 
@@ -1625,9 +1625,12 @@
     input = div.getElementsByTagName("input")[0];
 
     support = {
+
+      // 检测是否含有前导空白符 
       // IE strips leading whitespace when .innerHTML is used
       leadingWhitespace: (div.firstChild.nodeType === 3),
 
+      // 检查浏览器是否为空 table 元素自动插入了空 tbody 元素
       // Make sure that tbody elements aren't automatically inserted
       // IE will insert them into empty tables
       tbody: !div.getElementsByTagName("tbody").length,
@@ -1734,6 +1737,7 @@
     // WebKit doesn't clone checked state correctly in fragments
     support.checkClone = fragment.cloneNode(true).cloneNode(true).lastChild.checked;
 
+    // 检测复选框和单选按钮插入 DOM 树后，其选中状态 checked 是否会丢失
     // Check if a disconnected checkbox will retain its checked
     // value of true after appended to the DOM (IE6/7)
     support.appendChecked = input.checked;
@@ -5978,6 +5982,24 @@
 
 
 
+  /**
+   * @description
+   * 创建一个安全的文档的对象。所谓“安全”，是指不支持 HTML5 的浏览器也能够正确地解析和渲染未知的 HTML5 标签，
+   * 即能够正确地构建DOM 树，并且可以为之设置样式。
+   * 
+   * IE 9 以下的浏览器不支持 HTML5 ，如果遇到未知标签（如<article>），浏览器会向 DOM 树中插入一个没有子元素
+   * 的空元素。针对这个问题有一个“莫名其妙”的解决方法，就是在使用未知标签之前调用 document.createElement( '未知标签' ) 
+   * 创建一个对应的 DOM 元素，这样就可以“教会”浏 览器正确地解析和渲染这个未知标签。 
+   * 
+   * 变量 nodeNames 中存放了所有的 HTML5 标签，函数 createSafeFragment() 在传入的文 档对象 document 上创建一个新的文
+   * 档片段，然后在该文档片段上逐个创建 HTML5 元素，从 而“教会”不支持 HTML5 的浏览器正确地解析和渲染 HTML5 标签
+   * 
+   * @param {*} document
+   * 需要创建安全文档片段的文档对象
+   * 
+   * @returns
+   * 基于传入文档的安全文档片段
+   */
   function createSafeFragment(document) {
     var list = nodeNames.split("|"),
       safeFrag = document.createDocumentFragment();
@@ -5995,10 +6017,14 @@
   var nodeNames = "abbr|article|aside|audio|bdi|canvas|data|datalist|details|figcaption|figure|footer|" +
     "header|hgroup|mark|meter|nav|output|progress|section|summary|time|video",
     rinlinejQuery = / jQuery\d+="(?:\d+|null)"/g,
+    //正则表达式 rleadingWhitespace 用于检测 html 代码中是否含有前导空白符
     rleadingWhitespace = /^\s+/,
+    // 正则表达式 rxhtmlTag 用于匹配 html 代码中的自关闭标签，并可以通过方法 replace() 替换为成对的标签
     rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/ig,
     rtagName = /<([\w:]+)/,
+    // 正则表达式 tbody 用于检查 html 代码中是否含有 tbody 标签
     rtbody = /<tbody/i,
+    // 正则表达式 rhtml 用于检测 html 代码中是否含有标签、字符代码或数字代码
     rhtml = /<|&#?\w+;/,
     rnoInnerhtml = /<(?:script|style)/i,
     // 正则表达式 rnocache 检测 html 代码中不能含有的标签：<script>、<object>、<embed>、<option>、<style> 定义 
@@ -6008,8 +6034,16 @@
     // 正则表达式 rchecked 检测 html 代码中的单选按钮和复选框是否被选中
     // checked="checked" or checked
     rchecked = /checked\s*(?:[^=]|=\s*.checked.)/i,
+    // 正则表达式 rscriptType 用于检测是否含有值 “ /javascript ” 或  “ /ecmascript ”  
     rscriptType = /\/(java|ecma)script/i,
     rcleanScript = /^\s*<!(?:\[CDATA\[|\-\-)/,
+    /**
+     * wrapMap 对象作为字典，用于保存标签 tag 对应的父标签
+     * 
+     * 在对象wrapMap 中包含了以下标签：option、optgroup、legend、thead、tbody、tfoot、 colgroup、caption、
+     * tr、td、th、col、area、_default，每个标签对应一个数组，数组中的元素 依次是：包裹的深度、包裹的父标签、父标签对应的关闭标签
+     */
+    // 
     wrapMap = {
       option: [1, "<select multiple='multiple'>", "</select>"],
       legend: [1, "<fieldset>", "</fieldset>"],
@@ -6020,12 +6054,18 @@
       area: [1, "<map>", "</map>"],
       _default: [0, "", ""]
     },
+
+    // 为当前文档创建一个安全文档片段
     safeFragment = createSafeFragment(document);
 
   wrapMap.optgroup = wrapMap.option;
   wrapMap.tbody = wrapMap.tfoot = wrapMap.colgroup = wrapMap.caption = wrapMap.thead;
   wrapMap.th = wrapMap.td;
 
+  /**
+   * 在 IE 9 以下的浏览器中，不能序列化标签<link> 和 <script>，即通过浏览器的 innerHTML 机制不能将其转换为对应的 
+   * link 元素和 script 元素，解决方案是在标签<link> 和 <script> 外包裹一层元 素再转换
+   */
   // IE can't serialize <link> and <script> tags normally
   if (!jQuery.support.htmlSerialize) {
     wrapMap._default = [1, "div<div>", "</div>"];
@@ -6626,12 +6666,28 @@
   }
 
   // Used in clean, fixes the defaultChecked property
+  /**
+   * @description 
+   * 将元素 elem  checked 属性的值赋值给 defaultChecked 属性
+   * 
+   * @param {*} elem
+   * 需要操作的元素
+   */
   function fixDefaultChecked(elem) {
     if (elem.type === "checkbox" || elem.type === "radio") {
       elem.defaultChecked = elem.checked;
     }
   }
+
+
   // Finds all inputs and passes them to fixDefaultChecked
+  /**
+   * @description
+   * 找出 elem 元素其中的复选框和单选按钮，并调用函数 fixDefaultChecked( elem ) 把属性 checked 的值赋值给属性 defaultChecked
+   * 
+   * @param {*} elem
+   * 需要查找的元素
+   */
   function findInputs(elem) {
     var nodeName = (elem.nodeName || "").toLowerCase();
     if (nodeName === "input") {
@@ -6706,10 +6762,34 @@
       return clone;
     },
 
+    /**
+     * @description 
+     * 该方法把 html 代码转换成 DOM 元素，并提取其中的 script 元素
+     * 
+     * @param {Array} elems
+     * 数组，包含了待转换的 html 代码
+     * 
+     * @param {*} context
+     * 文档对象，该参数在方法 jQuery.buildFragment() 中被修正为正确的文 档对象（变量doc）
+     * 
+     * @param {*} fragment
+     * 文档片段，作为存放转换后的 DOM 元素的占位符，该参数在jQuery. buildFragment() 中被创建 
+     * 
+     * @param {Array} scripts
+     * 数组，用于存放转换后的 DOM 元素中的 script 元素
+     * 
+     * @returns
+     * 转换合并的 DOM 元素
+     */
     clean: function (elems, context, fragment, scripts) {
       var checkScriptType, script, j,
-        ret = [];
+        ret = []; //用于存放转换后的 DOM 元素
 
+      /**
+       * 修正文档对象 context
+       * 
+       * 再次做类似的修正，是为了方便直接调用 jQuery.clean() 来转换 html 代码为 DOM 元素
+       */
       context = context || document;
 
       // !context.createElement fails in IE with an error but returns typeof 'object'
@@ -6717,31 +6797,57 @@
         context = context.ownerDocument || context[0] && context[0].ownerDocument || document;
       }
 
+      /**
+       * 遍历待转换的 html 代码数组进行转化
+       */
+
       for (var i = 0, elem;
+
+        // 判断 elem 的有效性时使用的是“!=”，这样可以同时过滤 null 和 undeﬁned ，却 又不会过滤整型数字 0
         (elem = elems[i]) != null; i++) {
+
+        // 如果 elem 是数值型，通过让 elem 自加一个空字符串，把 elem 转 换为字符串，了简化随后对elem 有效性和类型 的判断
         if (typeof elem === "number") {
           elem += "";
         }
 
+        // 用于过滤空字符串的情况。
         if (!elem) {
           continue;
         }
 
+        // 如果 elem 是字符串，即 html 代码，则开始转换 html 代码为 DOM 元 素
         // Convert html string into DOM nodes
         if (typeof elem === "string") {
+
+          // 如果 html 代码中不包含标签、字符代码和数字代码，则调用原生方法 document.createTextNode() 创建文本节点
           if (!rhtml.test(elem)) {
             elem = context.createTextNode(elem);
           } else {
+            /**
+             * 用正则 rxhtmlTag 匹配 html 代码中的自关闭标签，并通过方法 replace() 替换为成对的标签
+             * 
+             * 自关闭标签是指没有对应的关闭标签，而是在标签的最后加一个"/"来关闭它
+             */
             // Fix "XHTML"-style tags in all browsers
             elem = elem.replace(rxhtmlTag, "<$1></$2>");
 
+            // 提取 html 代码中的标签部分，删除了前导空白符和左尖括号，并转换为小写赋值给变量 wrap
             // Trim whitespace, otherwise indexOf won't work as expected
             var tag = (rtagName.exec(elem) || ["", ""])[1].toLowerCase(),
+              // 从对象 wrapMap 中取出标签 tag 对应的父标签
               wrap = wrapMap[tag] || wrapMap._default,
               depth = wrap[0],
               div = context.createElement("div"),
               safeChildNodes = safeFragment.childNodes,
               remove;
+
+            /**
+             * 把临时 div 元素插入一个安全文档片段中 
+             * 
+             * 如果传入的文档对象 context 是当前文档对象，则把临时 div 元素插 入已创建的安全文档片段safeFragment 中；
+             * 否则，调用函数createSafeFragment() 在文档对象 context 上创建一个新的安全文档片段，然后插入临时 div 元素
+             */
 
             // Append wrapper element to unknown element safe doc fragment
             if (context === document) {
@@ -6752,25 +6858,57 @@
               createSafeFragment(context).appendChild(div);
             }
 
+            // 先为 html 代码包裹必要的父标签，然后赋值给临时 div 元素的 innerHTML 属性，从而将 html 代码转换为 DOM 元素
             // Go to html and back, then peel off extra wrappers
             div.innerHTML = wrap[1] + elem + wrap[2];
 
+            // 用 while 循环层层剥去包裹的父元素，最终变量 div 将指向 html 代码对应的 DOM 元素的父元素
             // Move to the right depth
             while (depth--) {
               div = div.lastChild;
             }
+
+            /**
+             * 移除 IE 6/7 自动插入的空 tbody 元素 
+             * 
+             * 在 IE 6/7 中，浏览器会为空table 元素自动插入空tbody 元素，此时测试项 jQuery.support.tbody 
+             * 为 false。空元素指没有子元素的元素。 
+             */
 
             // Remove IE's autoinserted <tbody> from table fragments
             if (!jQuery.support.tbody) {
 
               // String was a <table>, *may* have spurious <tbody>
               var hasBody = rtbody.test(elem),
+
+                /**
+                 * html 代码中含有 table 标签，没有 tbody 标签，浏览器生成 DOM 元素时可能自动插 入空 tbody 元素。
+                 * 此时变量 div 指向 div 元素，div.ﬁrstChild 指向 table 元素，div.ﬁrstChild. childNodes 则是
+                 * tbody、thead、tfoot、colgroup、caption 的元素集合
+                 */
                 tbody = tag === "table" && !hasBody ?
                 div.firstChild && div.firstChild.childNodes :
 
+
+                /**
+                 * 如果执行“wrap[1] ==="<table>"&& !hasBody ? div.childNodes:”表示为 HTML 代码包 裹了父标签<table>，
+                 * 但是HTML 代码中没有tbody 标签，即 HTML 代码中含有 thead、tfoot、 colgroup、caption 之一或多个，浏览器生成
+                 * DOM 元素时可能自动插入空 tbody 元素。此时变量 div 指向 table 元素（因为 while 循环剥去包裹的过程），
+                 * div.childNodes 是tbody、thead、tfoot、colgroup、caption 的元素集合。 
+                 * 
+                 * 如果 HTML 代码中含有 tbody 标签，无论空或非空都不需要删除，所以是 []。在 其他情况下，
+                 * 浏览器生成 DOM 元素时不会自动插入空 tbody 元素，仍然是 []
+                 */
                 // String was a bare <thead> or <tfoot>
                 wrap[1] === "<table>" && !hasBody ?
                 div.childNodes : [];
+
+
+              /**
+               * 因为数组tbody 中的元素还可能是thead、tfoot、colgroup、caption 元素，所以要先判断 tbody[j] 是否是 tbody 元素，
+               * 因为前面“提取 IE 6/7 自动插入的空 tbody 元素”的代 码已经覆盖了所有可能的情况，所以 !tbody[j].childNodes.length
+               * 属于防御性检查，以防万一
+               */
 
               for (j = tbody.length - 1; j >= 0; --j) {
                 if (jQuery.nodeName(tbody[j], "tbody") && !tbody[j].childNodes.length) {
@@ -6779,13 +6917,28 @@
               }
             }
 
+            /**
+             * 插入 IE 6/7/8 自动剔除的前导空白符 
+             * 
+             * 在 IE 6/7/8 中，设置innerHTML 属性时，浏览器会自动剔除前导空白符，测试
+             * 测试项jQuery.support.leadingWhitespace 为 false。用正则 rleadingWhitespace 
+             * 检测 html 代码中是否含有前导空白符
+             * 
+             * 用正则rleadingWhitespace 提取HTML 代码中的前导空白符，然后调用原 生方法 createTextNode() 
+             * 创建文本节点，最后插入 div 元素的第一个子元素前
+             */
+
             // IE completely kills leading whitespace when innerHTML is used
             if (!jQuery.support.leadingWhitespace && rleadingWhitespace.test(elem)) {
               div.insertBefore(context.createTextNode(rleadingWhitespace.exec(elem)[0]), div.firstChild);
             }
 
+            // 取到转换后的 DOM 元素集合 
             elem = div.childNodes;
 
+            /**
+             * 清除文档片段里的 DOM 元素，避免元素堆积
+             */
             // Clear elements from DocumentFragment (safeFragment or otherwise)
             // to avoid hoarding elements. Fixes #11356
             if (div) {
@@ -6803,6 +6956,16 @@
           }
         }
 
+
+        /**
+         * 在 IE 6/7 中修正复选框和单选按钮的选中状态 
+         * 在 IE 6/7 中，复选框和单选按钮插入 DOM 树后，其选中状态 checked 会丢 失，此时测试项
+         * jQuery.support.appendChecked 为 false。通过在插入之前把属性 checked 的值 赋值给属性 
+         * defaultChecked，可以解决这个问题。 
+         * 
+         * 在每个元素上调用函数 ﬁndInputs( elem )。 函数 ﬁndInputs( elem ) 会找出其中的复选框和单选按钮，
+         * 并调用函数 fixDefaultChecked( elem ) 把属性 checked 的值赋值给属性 defaultChecked
+         */
         // Resets defaultChecked for any radios and checkboxes
         // about to be appended to the DOM in IE 6/7 (#8060)
         var len;
@@ -6816,6 +6979,7 @@
           }
         }
 
+        // 合并转换后的 DOM 元素 
         if (elem.nodeType) {
           ret.push(elem);
         } else {
@@ -6823,26 +6987,50 @@
         }
       }
 
+      /**
+       * 如果传入了文档片段fragment，则遍历数组ret，提取所有（包括子元素）合法的script
+       * 元素存入数组 scripts，并把其他元素插入文档片段 fragment
+       */
       if (fragment) {
+        /**
+         * @description
+         * 检测 script 元素是否是可执行。如果一个 script 元素没有指定属性 type，或者属性
+         * type 的值含有“/javascript”或 “/ecmascript”，则认为是可执行的
+         * 
+         * @param {*} elem
+         * 需要检测的元素
+         * 
+         * @returns 
+         * 布尔值，script 元素是否是可执行
+         */
         checkScriptType = function (elem) {
           return !elem.type || rscriptType.test(elem.type);
         };
+
         for (i = 0; ret[i]; i++) {
           script = ret[i];
           if (scripts && jQuery.nodeName(script, "script") && (!script.type || rscriptType.test(script.type))) {
             scripts.push(script.parentNode ? script.parentNode.removeChild(script) : script);
 
           } else {
+
+            /**
+             * 提取当前元素所包含的 script 元素，并把其中可执行的插入数组 ret，插入位置在当前元素之后
+             * 以便继续执行检测和提取
+             */
             if (script.nodeType === 1) {
               var jsTags = jQuery.grep(script.getElementsByTagName("script"), checkScriptType);
 
               ret.splice.apply(ret, [i + 1, 0].concat(jsTags));
             }
+
+            // 把其他元素插入文档片段 fragment
             fragment.appendChild(script);
           }
         }
       }
-
+      
+      // 返回转换后的 DOM 元素数组 
       return ret;
     },
 
