@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-07 21:25:36
+ * @Last Modified time: 2018-10-08 10:43:01
  */
 
 
@@ -276,7 +276,11 @@
               // 获取正确的 context 参数
               context = context instanceof jQuery ? context[0] : context;
 
-              // 获取正确的文档环境
+              /**
+               * 获取正确的文档环境，如果 context 存在且为 DOM 元素，则获取它的 ownerDocument 作为 doc，
+               * 如果不是 DOM 元素则假定 context 为文档对象赋值给 doc。如果 context 如果不存在，则以 document
+               * 作为文档对象赋值给 doc
+               */
               doc = (context ? context.ownerDocument || context : document);
 
               // 用 rsingleTag 检测 html 片段是否是单独标签，匹配结果放在数组 ret 中。
@@ -317,6 +321,8 @@
                  * 和参数 cacheable：html 片段是否满足缓存条件
                  * 
                  * 如果 html 片段满足缓存条件，则在使用转换后的 DOM 元素时，必须先复制一份再使用 
+                 * 
+                 * 注意插入文档片段时，插入的是它的子节点，不能直接插入文档片段
                  */
 
                 ret = jQuery.buildFragment([match[1]], [doc]);
@@ -1662,6 +1668,7 @@
       // Tests for enctype support on a form(#6743)
       enctype: !!document.createElement("form").enctype,
 
+      // 检测当前浏览器是否可以正确地复制 HTML5 元素
       // Makes sure cloning an html5 element does not cause problems
       // Where outerHTML is undefined, this still works
       html5Clone: document.createElement("nav").cloneNode(true).outerHTML !== "<:nav></:nav>",
@@ -1723,6 +1730,7 @@
     fragment = document.createDocumentFragment();
     fragment.appendChild(div.lastChild);
 
+    // 检测当前浏览器是否可以正确地复制单选按钮和复选 按钮的选中状态checked
     // WebKit doesn't clone checked state correctly in fragments
     support.checkClone = fragment.cloneNode(true).cloneNode(true).lastChild.checked;
 
@@ -5993,8 +6001,11 @@
     rtbody = /<tbody/i,
     rhtml = /<|&#?\w+;/,
     rnoInnerhtml = /<(?:script|style)/i,
+    // 正则表达式 rnocache 检测 html 代码中不能含有的标签：<script>、<object>、<embed>、<option>、<style> 定义 
     rnocache = /<(?:script|object|embed|option|style)/i,
+    // 正则表达式 rnoshimcache 检测 html 代码中是否含有HTML5 标签
     rnoshimcache = new RegExp("<(?:" + nodeNames + ")[\\s/>]", "i"),
+    // 正则表达式 rchecked 检测 html 代码中的单选按钮和复选框是否被选中
     // checked="checked" or checked
     rchecked = /checked\s*(?:[^=]|=\s*.checked.)/i,
     rscriptType = /\/(java|ecma)script/i,
@@ -6449,9 +6460,49 @@
     dest.removeAttribute("_change_attached");
   }
 
+  /**
+   * @description 
+   * jQuery.buildFragment 方法先创建一个文档片段 DocumentFragment，然后调用方法 jQuery.clean()
+   * 方法将 html 代码转换为 DOM 元素，并存储在创建的文档中。它还会把转换后的 DOM 元素缓存起来。这个方法同时为
+   * 构造 jQuery 对象和 DOM 操作提供底层支持
+   * 
+   * 文档片段 DocumentFragment 表示函数的一部分，但并不属于文档树。当 DocumentFragment 插入文档树时，插入的
+   * 不是 DocumentFragment 本身，而是它的所有子孙节点，即可以一次像文档树中插入多个节点。
+   * 
+   * @param {Array} args
+   * 数组，含有带转化为 DOM 元素的 html 代码
+   * 
+   * @param {Array} nodes
+   * 数组，含有文档对象，jQuery 对象或 DOM 对象，用于修正创建文档片段 DocumentFragment 的文档对象
+   * 
+   * @param {Array} scripts
+   * 数组，用于存放 html 代码中的 Script 元素。该参数会传给方法 jQuery.clean() ，后者把 html 代码转化为 DOM 元素后，
+   * 会提取其中的 script 元素并存入 数组 scripts 。
+   * 
+   * @returns 
+   * {
+   * fragment：转换后的 DOM 元素的文档片段
+   * cacheable：html 代码是否满足缓存条件
+   * }
+   * 
+   */
+
   jQuery.buildFragment = function (args, nodes, scripts) {
-    var fragment, cacheable, cacheresults, doc,
+    var fragment, // 用于指向转换后的 DOM 元素的文档片段
+      cacheable, // 判断 html 代码是否满足缓存条件
+      cacheresults, // 从缓存中获取的缓存结果
+      doc, // 表示创建文档片段的文档对象
       first = args[0];
+
+    /**
+     * 修正 doc 对象，数组 nodes 可能包含一个明确的文档对象，也可能是其他对象。
+     * 
+     * ownerDocument 表示 DOM 元素所在的文档对象，如果存在，则直接赋给 doc，如果不存在
+     * 则假定 node[0] 为文档对象并赋值给它
+     * 
+     * 但是还有可能不是文档对象，所以我们可以通过检测 doc.createDocumentFragment 方法是否
+     * 存在来判断 doc 是否为文档对象，如果不存在，则修改 doc 为当前文档对象 document
+     */
 
     // nodes may contain either an explicit document object,
     // a jQuery collection or context object.
@@ -6466,6 +6517,21 @@
     if (!doc.createDocumentFragment) {
       doc = document;
     }
+
+    /**
+     * 判断 html 代码是否满足缓存条件，如果符合则尝试从缓存对象jQuery.fragments 中读取缓存的 DOM 元素
+     * 
+     * html 代码必须满足以下所有条件，才认为符合缓存条件：
+     * 1. 数组 args 的长度为1，且第一个元素是字符串，即数组args 中只含有一段 html 代码
+     * 2. html 代码的长度小于 512（1/2KB），否则可能会导致缓存占用的内存过大 
+     * 3.文档对象 doc 是当前文档对象，即只缓存为当前文档创建的DOM 元素，不缓存其他 框架（iframe）的
+     * 4. html 代码以左尖括号开头，即只缓存 DOM 元素，不缓存文本节点
+     * 5. html 代码中不能含有以下标签：<script>、<object>、<embed>、<option>、<style>，通过正则 rnocache 检测
+     * 6. 当前浏览器可以正确地复制单选按钮和复选框的选中状态checked，通过测试项jQuery.support.checkClone 检测。
+     *    或者HTML 代码 中的单选按钮和复选按钮没有被选中，通过正则rchecked 检测，
+     * 7. 当前浏览器可以正确地复制 HTML5 元素，通过测试项jQuery.support.html5Clone检测。
+     *    或者 HTML 代码中不含有 HTML5 标签，通过正则rnoshimcache 检测
+     */
 
     // Only cache "small" (1/2 KB) HTML strings that are associated with the main document
     // Cloning options loses the selected state, so don't cache them
@@ -6485,15 +6551,32 @@
       }
     }
 
+    /**
+     * 处理 fragment 为空时的三种情况
+     * 1. html 代码不符合缓存条件。 
+     * 2. html 代码符合缓存条件，但此时是第一次转换，不存在对应的缓存。 
+     * 3. html 代码符合缓存条件，但此时是第二次转换，对应的缓存值是 1。 
+     */
     if (!fragment) {
       fragment = doc.createDocumentFragment();
+      // 调用将 jQuery.clean() 方法将 html 代码转换为 DOM 元素，并存储在创建的文档片段中
       jQuery.clean(args, doc, fragment, scripts);
     }
 
+    /**
+     * 如果HTML 代码符合缓存条件，则在缓存对象jQuery.fragments 中 
+     * 
+     * 对应的缓存值有以下三种情况
+     * 
+     * 1. 第一次缓存 html 代码，缓存前值不存在，缓存后值为 1
+     * 2. 第二次缓存 html 代码，缓存前值为1，缓存后值为对应文档片段
+     * 3. 第三次及以后缓存 html 代码，缓存前值为文档片段，缓存后值为对应文档片段
+     */
     if (cacheable) {
       jQuery.fragments[first] = cacheresults ? fragment : 1;
     }
 
+    // 返回文档片段和缓存状态 
     return {
       fragment: fragment,
       cacheable: cacheable
