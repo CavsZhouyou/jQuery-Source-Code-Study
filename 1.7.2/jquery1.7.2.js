@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-08 22:40:17
+ * @Last Modified time: 2018-10-09 10:39:30
  */
 
 
@@ -540,71 +540,126 @@
 
 
     /**
-     * 定义 extend 方法，用于合并两个或多个对象的属性到第一个对象
+     * @description
+     * 用于合并两个或多个对象的属性到第一个对象，常用于编写插件和处理函数的参数。
+     * 如果提供了两个或更多的对象，所有源对象的属性将会合并到目标对象；如果仅提供一个对象，
+     * 意味着参数 target 被忽略，jQuery 或 jQuery.fn 被当作目标对象，通过这种方式可以在
+     * jQuery 或 jQuery.fn 上添加新的属性和方法，jQuery 的其他模块大都是这么实现的
+     * 
+     * 因为参数的个数是不确定的，可以有任意多个，所以没有列出可接受的参数。 
+     * 
+     * @param {boolean} deep
+     * 参数 deep 是可选的布尔值，表示是否进行深度合并（即递归合并）
+     * 
+     * @param {Object} target
+     * 参数target 是目标对象
+     *  
+     * @param {Object} object1 
+     * @param {Object} objectN
+     * 参数object1 和 objectN 是源对象，包含了待合并的属性
+     * 
      */
-    jQuery.extend = jQuery.fn.extend = function () {
-      var options, name, src, copy, copyIsArray, clone,
-        target = arguments[0] || {},
-        i = 1,
-        length = arguments.length,
-        deep = false;
+    jQuery.extend =
+      jQuery.fn.extend = function () {
 
-      // Handle a deep copy situation
-      if (typeof target === "boolean") {
-        deep = target;
-        target = arguments[1] || {};
-        // skip the boolean and the target
-        i = 2;
-      }
+        var options, // 指向某个源对象
+          name, // 表示某个源对象的某个属性名
+          src, // 表示目标对象的某个属性的原始值
+          copy, // 表示某个源对象的某个属性的值。 
+          copyIsArray, // 指示变量 copy 是否是数组
+          clone, // 表示深度复制时原始值的修正值
+          target = arguments[0] || {}, // 指向目标对象
+          i = 1, // 表示源对象的起始下标
+          length = arguments.length, // 表示参数的个数，用于修正变量 target
+          deep = false; // 指示是否执行深度复制，默认为 false
 
-      // Handle case when target is a string or something (possible in deep copy)
-      if (typeof target !== "object" && !jQuery.isFunction(target)) {
-        target = {};
-      }
+        /**
+         * 修正目标对象 target、源对象起始下标 i 
+         * 如果第一个参数是布尔值，则修正第一个参数为 deep，修正第二个参数 为目标对象 target，并且期望源对象从第三个元素开始
+         */
+        // Handle a deep copy situation
+        if (typeof target === "boolean") {
+          deep = target;
+          target = arguments[1] || {};
+          // skip the boolean and the target
+          i = 2;
+        }
 
-      // extend jQuery itself if only one argument is passed
-      if (length === i) {
-        target = this;
-        --i;
-      }
+        /**
+         * 如果目标对象target 不是对象、不是函数，而是一个字符串或其他的 基本类型，则统一替换为空对象 {}，
+         * 因为在基本类型上设置非原生属性是无效的。
+         */
+        // Handle case when target is a string or something (possible in deep copy)
+        if (typeof target !== "object" && !jQuery.isFunction(target)) {
+          target = {};
+        }
 
-      for (; i < length; i++) {
-        // Only deal with non-null/undefined values
-        if ((options = arguments[i]) != null) {
-          // Extend the base object
-          for (name in options) {
-            src = target[name];
-            copy = options[name];
+        /**
+         * 变量 i 表示源对象开始的下标，变量length 表示参数个数，如果二者相等，表示期望的源对象没有传入，
+         * 则把 jQuery 或 jQuery.fn 作为目标对象，并且把源对象 的开始下标减一，从而使得传入的对象被当作源对象。
+         * 
+         * 变量 length 等于 i 可能有两种情况： 
+         * 1.extend( object )，只传入了一个参数
+         * 2.extend( deep, object )，传入了两个参数，第一个参数是布尔值。 
+         */
+        // extend jQuery itself if only one argument is passed
+        if (length === i) {
+          target = this;
+          --i;
+        }
 
-            // Prevent never-ending loop
-            if (target === copy) {
-              continue;
-            }
+        /**
+         * 逐个遍历源对象，循环变量 i 表示源对象开始的下标
+         */
+        for (; i < length; i++) {
 
-            // Recurse if we're merging plain objects or arrays
-            if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)))) {
-              if (copyIsArray) {
-                copyIsArray = false;
-                clone = src && jQuery.isArray(src) ? src : [];
+          // 遍历源对象的属性 
+          // Only deal with non-null/undefined values
+          if ((options = arguments[i]) != null) {
+            // Extend the base object
+            for (name in options) {
+              src = target[name];
+              copy = options[name];
 
-              } else {
-                clone = src && jQuery.isPlainObject(src) ? src : {};
+              // 如果复制值 copy 与目标对 象 target 相等，为了避免深度遍历时死循环，因此不会覆盖目标对象的同名属性
+              // Prevent never-ending loop
+              if (target === copy) {
+                continue;
               }
 
-              // Never move original objects, clone them
-              target[name] = jQuery.extend(deep, clone, copy);
+              /**
+               * 如果是深度合并，且复制值 copy 是普通JavaScript 对象或数组，则递 归合并
+               */
+              // Recurse if we're merging plain objects or arrays
+              if (deep && copy && (jQuery.isPlainObject(copy) || (copyIsArray = jQuery.isArray(copy)))) {
+                if (copyIsArray) {
+                  copyIsArray = false;
+                  // 复制值copy 是数组时，如果原始值src 不是数组，则修正为空数组
+                  clone = src && jQuery.isArray(src) ? src : [];
 
-              // Don't bring in undefined values
-            } else if (copy !== undefined) {
-              target[name] = copy;
+                } else {
+
+                  // 如果原始值 src 不是普通 JavaScript 对象，则修正为空对象 {}
+                  clone = src && jQuery.isPlainObject(src) ? src : {};
+                }
+
+                // 先把复制值copy 递归合并到原始值副本clone 中，然后覆盖目标对象的同名属性
+                // Never move original objects, clone them
+                target[name] = jQuery.extend(deep, clone, copy);
+
+                // Don't bring in undefined values
+              } else if (copy !== undefined) {
+
+                // 如果不是深度合并，并且复制值copy不是undeﬁned，则直接覆盖目标对象的同名属性
+                target[name] = copy;
+              }
             }
           }
         }
-      }
 
-      // Return the modified object
-      return target;
-    };
+        // Return the modified object
+        return target;
+      };
 
     /**
      * 定义静态属性和方法
@@ -7029,7 +7084,7 @@
           }
         }
       }
-      
+
       // 返回转换后的 DOM 元素数组 
       return ret;
     },
