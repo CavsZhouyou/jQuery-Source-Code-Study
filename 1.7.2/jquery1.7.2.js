@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-10 14:35:51
+ * @Last Modified time: 2018-10-10 15:36:11
  */
 
 
@@ -87,9 +87,11 @@
        * 定义局部变量声明
        */
 
+      // 把可能存在的 window.jQuery 备份到局部变量 _jQuery ，避免直接被覆盖掉，调用 noConflict 函数，可恢复其控制权
       // Map over jQuery in case of overwrite
       _jQuery = window.jQuery,
 
+      // 把可能存在的 window.$ 备份到局部变量 _$ ，避免直接被覆盖掉，调用 noConflict 函数，可恢复其控制权
       // Map over the $ in case of overwrite
       _$ = window.$,
 
@@ -846,15 +848,44 @@
      */
     jQuery.extend({
 
+      /**
+       * @description
+       * 方法 jQuery.noConflict(deep) 用于释放 jQuery 对全局变量$的控制权，
+       * 可选的参数 deep 指示是否释放对全局变量 jQuery 的控制权。$ 仅仅是 jQuery 的别名，所有的功能没有$也能使用。
+       * 
+       * 很多 JavaScript 库使用美元符$作为函数名或变量名，在使用 jQuery 的同时，如果需要使用另一个 JavaScript 库，
+       * 可以调用 $.noConflict() 返回$给其他库。如果有必要（例如，在一个页面中使用多个版本的 jQuery 库，但很少有这样的必要），
+       * 也可以释放全局变量 jQuery 的控制权，只需要给这个方法传入参数 true 即可。
+       * 
+       * @param {Boolean} deep
+       * 表示是否释放对全局变量 jQuery 的控制权
+       * 
+       * @returns
+       * jQuery 构造函数引用
+       */
       noConflict: function (deep) {
+
+        /**
+         * 检测只有在当前 jQuery 库持有全局变量$的情况下，才会释放$的控制权给前一个 JavaScript 库
+         * 
+         * 如果不检测，则每次调用 jQuery.noConflict() 时都会释放$给前一个 JavaScript 库，当页面中
+         * 有两个以上定义了$的 JavaScript 库时，对$的管理将会变得混乱。
+         */
         if (window.$ === jQuery) {
           window.$ = _$;
         }
-
+        /**
+         * 如果参数 deep 为 true ，只有在当前 jQuery 库持有全局变量 jQuer y的情况下，才会释放 jQuery 
+         * 的控制权给前一个 JavaScript 库
+         * 
+         * 如果不检测，则每次调用 jQuery.noConflict(true) 时都会释放 jQuery 给前一个 JavaScript 库，当页面中
+         * 有两个以上定义了 jQuery 的 JavaScript 库时，对 jQuery 的管理将会变得混乱。
+         */
         if (deep && window.jQuery === jQuery) {
           window.jQuery = _jQuery;
         }
 
+        // 返回 jQuery 构造函数引用
         return jQuery;
       },
 
