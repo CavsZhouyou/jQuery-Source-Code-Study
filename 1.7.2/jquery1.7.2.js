@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-09 10:39:30
+ * @Last Modified time: 2018-10-10 14:35:51
  */
 
 
@@ -150,6 +150,10 @@
       // The ready event handler
       DOMContentLoaded,
 
+      /**
+       * 这里通过声明对这些核心方法的引用，使得在jQuery代码中可以借用这些核心方法的功能，
+       * 执行时可通过方法call()和apply()指定方法执行的环境，即关键字this所引用的对象。
+       */
       // Save a reference to some core methods
       toString = Object.prototype.toString,
       hasOwn = Object.prototype.hasOwnProperty,
@@ -419,24 +423,58 @@
        * 定义原型属性和方法
        */
 
+      // 用于记录 jQuery 查找和过滤 DOM 元素时的选择器表达式，但不一定是可执行的选择器表达式，该属性更多的是为了方便调试
       // Start with an empty selector
       selector: "",
 
+      // 表示当前 jQuery 的版本号
       // The current version of jQuery being used
       jquery: "1.7.2",
 
+      // 表示当前 jQuery 对象中元素的个数
       // The default length of a jQuery object is 0
       length: 0,
 
+
+
+      /**
+       * @description
+       * 返回当前 jQuery 对象中元素的个数。方法 .size() 在功能上等价于属性 .length ，
+       * 返但应该优先使用属性 .length ，因为它没有函数调用开销
+       * 
+       * @returns
+       * 当前 jQuery 对象中元素的个数
+       */
       // The number of elements contained in the matched element set
       size: function () {
         return this.length;
       },
 
+
+      /**
+       * @description
+       * 方法 .toArray() 将当前 jQuery 对象转换为真正的数组，转换后的数组包含了所有元素。
+       * 方法 .toArray() 的实现巧妙地借用了数组的方法 slice()，
+       * 
+       * @returns 
+       * 转换后的数组
+       */
       toArray: function () {
         return slice.call(this, 0);
       },
 
+      /**
+       * @description
+       * 方法 .get(num) 返回当前 jQuery 对象中指定位置的元素或包含了全部元素的数组。
+       * 如果没有传入参数，则调用 .toArray() 返回包含了所有元素的数组；如果指定了参数 index ，
+       * 则返回一个单独的元素；参数 index 从0开始计算，并且支持负数，负数表示从元素集合末尾开始计算。
+       * 
+       * @param {Number} num 
+       * 希望获取元素的索引
+       * 
+       * @returns 
+       * jQuery 对象中指定位置的元素或包含了全部元素的数组
+       */
       // Get the Nth element in the matched element set OR
       // Get the whole matched element set as a clean array
       get: function (num) {
@@ -451,7 +489,25 @@
 
       // Take an array of elements and push it onto the stack
       // (returning the new matched element set)
+      /**
+       * @description
+       * 原型方法 .pushStack() 创建一个新的空 jQuery 对象，然后把 DOM 元素集合放入这个 jQuery 对象中，
+       * 并保留对当前 jQuery 对象的引用。
+       * 
+       * @param {*} elems
+       * 将放入新 jQuery 对象的元素数组（或类数组对象）
+       * 
+       * @param {*} name
+       * 产生元素数组 elems 的 jQuery 方法名
+       * 
+       * @param {*} selector
+       * 传给 jQuery 方法的参数，用于修正原型属性 .selector。
+       * 
+       * @returns
+       * jQuery 对象
+       */
       pushStack: function (elems, name, selector) {
+        // 构造一个新的空 jQuery 对象 ret ，this.constructor 指向构造函数 jQuery()
         // Build a new jQuery matched element set
         var ret = this.constructor();
 
@@ -462,21 +518,46 @@
           jQuery.merge(ret, elems);
         }
 
+        /**
+         * 在新 jQuery 对象 ret 上设置属性 prevObject ，指向当前 jQuery 对象，从而形成一个链式栈。
+         * 因此，方法 .pushStack() 的行为还可以理解为，构建一个新的 jQuery 对象并入栈，新对象位于栈顶，
+         * 这也是该方法如此命名的原因所在。
+         */
         // Add the old object onto the stack (as a reference)
         ret.prevObject = this;
 
         ret.context = this.context;
 
+
+        /**
+         * 新jQuery对象ret上设置属性selector，该属性不一定是合法的选择器表达式，更多的是为了方便调试，
+         */
         if (name === "find") {
           ret.selector = this.selector + (this.selector ? " " : "") + selector;
         } else if (name) {
           ret.selector = this.selector + "." + name + "(" + selector + ")";
         }
 
+        // 返回新 jQuery 对象 ret
         // Return the newly-formed element set
         return ret;
       },
 
+
+      /**
+       * @description
+       * 方法 .each() 遍历当前 jQuery 对象，并在每个元素上执行回调函数。每当回调函数执行时，
+       * 会传递当前循环次数作为参数，循环次数从0开始计数；更重要的是，回调函数是在当前元素
+       * 为上下文的语境中触发的，即关键字this总是指向当前元素；在回调函数中返回false可以终止遍历。
+       * 方法.each()内部通过简单的调用静态方法jQuery.each()实现
+       * 
+       * @param {Function} callback 
+       * 回调函数
+       * 
+       * @param {*} args
+       * 回调函数参数
+       * 
+       */
       // Execute a callback for every element in the matched set.
       // (You can seed the arguments with an array of args, but this is
       // only used internally.)
@@ -484,6 +565,15 @@
         return jQuery.each(this, callback, args);
       },
 
+      /**
+       * @description
+       * 添加 ready 事件，ready 事件的触发要早于 load 事件。 ready 事件并不是浏览器原生事件，
+       * 而是 DOMContentLoaded 事件、onreadystatechange 事件和函数 doScrollCheck() 的统称。
+       * 
+       * @param {Function} fn
+       * 需要绑定的事件
+       * 
+       */
       ready: function (fn) {
         // Attach the listeners
         jQuery.bindReady();
@@ -494,40 +584,130 @@
         return this;
       },
 
+      /**
+       * @description 
+       * 获取集合中指定位置的元素
+       * 
+       * @param {Number} i
+       * 索引值
+       * 
+       * @returns
+       * 指定位置的元素
+       */
       eq: function (i) {
+
+        // 如果参数i是字符串，则通过在前面加上一个加号把该参数转换为数值。
         i = +i;
+
         return i === -1 ?
           this.slice(i) :
           this.slice(i, i + 1);
       },
 
+      /**
+       * @description
+       * 获取集合中的第一个元素
+       * 
+       * @returns
+       * 集合中的第一个元素
+       */
       first: function () {
         return this.eq(0);
       },
 
+
+      /**
+       * @description
+       * 获取集合中的最后一个元素
+       * 
+       * @returns
+       * 集合中的最后一个元素
+       */
       last: function () {
         return this.eq(-1);
       },
 
+      /**
+       * @description
+       * 方法 .slice(start,end) 将匹配元素集合缩减为指定范围的子集。
+       * 
+       * 先借用数组方法 slice() 从当前 jQuery 对象中获取指定范围的子集（数组），
+       * 再调用方法 .pushStack() 把子集转换为 jQuery 对象，同时通过属性 prevObject 保留了对当前 jQuery 对象的引用
+       * 
+       * @param {Number} start
+       * 截取集合的起始位置
+       * 
+       * @param {Number} end
+       * 截取集合的末尾位置，末尾位置不截取
+       * 
+       * @returns
+       * 截取的子集
+       */
       slice: function () {
         return this.pushStack(slice.apply(this, arguments),
           "slice", slice.call(arguments).join(","));
       },
 
+      /**
+       * @description
+       * 方法 .map() 遍历当前 jQuery 对象，在每个元素上执行回调函数，并将回调函数的返回值放入一个新 jQuery 对象中。
+       * 该方法常用于获取或设置 DOM 元素集合的值。
+       * 
+       * 执行回调函数时，关键字 this 指向当前元素。回调函数可以返回一个独立的数据项或数据项数组，返回值将被插入结果集中；
+       * 如果返回一个数组，数组中的元素会被插入结果集；如果回调函数返回 null 或 undefined ，则不会插入任何元素。
+       * 
+       * 方法.map()内部通过静态方法jQuery.map()和原型方法.pushStack()实现
+       * 
+       * @param {*} callback
+       * 需要执行的回调函数
+       * 
+       * @returns
+       * 回调函数的结果集
+       */
       map: function (callback) {
         return this.pushStack(jQuery.map(this, function (elem, i) {
           return callback.call(elem, i, elem);
         }));
       },
 
+      /**
+       * @description
+       * 方法 .end() 结束当前链条中最近的筛选操作，并将匹配元素集合还原为之前的状态
+       * 
+       * @returns
+       * 返回前一个 jQuery 对象。如果属性 prevObject 不存在，则构建一个空的 jQuery 对象返回。
+       * 
+       * 返回前一个美女jQuery对象。如果属性prevObject不存在，则构建一个空的jQuery对象返回。
+       * 
+       */
       end: function () {
         return this.prevObject || this.constructor(null);
       },
 
+
+
+      /**
+       * 方法.push()、.sort()、.splice()仅在内部使用，都指向同名的数组方法，
+       * 因此它们的参数、功能和返回值与数组方法完全一致。
+       */
+
       // For internal use only.
       // Behaves like an Array's method, not like a jQuery method.
+
+      /**
+       * 方法 .push ( value ,...) 向当前 jQuery 对象的末尾添加新元素，并返回新长度，
+       */
       push: push,
+
+      /**
+       * 方法.sort([orderfunc])对当前jQuery对象中的元素进行排序，可以传入一个比较函数来指定排序方式
+       */
       sort: [].sort,
+
+      /**
+       * 方法 .splice(start,deleteCount,value,...) 向当前 jQuery 对象中插入、删除或替换元素。
+       * 如果从当前 jQuery 对象中删除了元素，则返回含有被删除元素的数组。
+       */
       splice: [].splice
     };
 
@@ -906,12 +1086,39 @@
         return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
       },
 
+
+      /**
+       * @description
+       * 静态方法 jQuery.each() 是一个通用的遍历迭代方法，用于无缝地遍历对象和数组。
+       * 对于数组和含有 length 属性的类数组对象（如函数参数对象 arguments ），该方法通过下标遍历，从0到 length -1；
+       * 对于其他对象则通过属性名遍历（ for-in ）。在遍历过程中，如果回调函数返回 false ，则结束遍历。
+       * 
+       * @param {*} object
+       * 需要遍历的对象或数组
+       * 
+       * @param {*} callback
+       * 需要执行的回调函数，会在数组的每个元素或对象的每个属性上执行。
+       * 
+       * @param {*} args
+       * 回调函数执行时传入的参数数组，可选。如果没有传入参数args，则执行回调函数时会传入两个参数（下标或属性名，对应的元素或属性值）
+       * 如果传入了参数args，则只把该参数传给回调函数。
+       * 
+       * @returns
+       */
       // args is for internal usage only
       each: function (object, callback, args) {
         var name, i = 0,
           length = object.length,
+          // 表示参数object是对象还是数组
           isObj = length === undefined || jQuery.isFunction(object);
 
+
+        /**
+         * 如果传入了参数 args ，对于对象，通过 for-in 循环遍历属性名，对于数组或类数组对象，
+         * 则通过 for 循环遍历下标，执行回调函数时只传入一个参数 args 。
+         * 注意，执行回调函数 callback 时通过方法 apply() 指定 this 关键字所引用的对象，同时要求
+         * 并假设参数 args 是数组，如果不是就会抛出 TypeError 。
+         */
         if (args) {
           if (isObj) {
             for (name in object) {
@@ -926,6 +1133,12 @@
               }
             }
           }
+
+          /**
+           * 如果未传入参数 args ，对于对象，通过 for-in 循环遍历属性名，对于数组或类数组对象，
+           * 则通过 for 循环遍历下标，执行回调函数时传入两个参数：下标或属性名，对应的元素或属性值。
+           * 注意，执行回调函数 callback 时通过方法 call() 指定 this 关键字所引用的对象。
+           */
 
           // A special, fast, case for the most common use of each
         } else {
@@ -944,6 +1157,21 @@
           }
         }
 
+
+        /**
+         * 上面的代码略显啰嗦，两段代码代码相似度很高，只是触发回调函数的方式和参数不同，完全可以考虑把它们合并，
+         * 在合并后的代码中根据变量 isObj 的值决定触发方式和参数，这样就可以减少一半的代码，但是，这也会导致在
+         * 遍历过程中需要反复判断变量 isObj 的值。两权相较，方法 jQuery.each ()选择了“略显啰嗦的”代码来避免性能下降。
+         * 
+         * 我的理解：isObj 如果放在外层判断，那么就需要在每次遍历的时候判断 args 的值来决定处罚的方式，因此每次都反复
+         * 判断变量 args 的值，会造成性能的下降。与作者的理解不同，在这里先记录一下。
+         */
+
+
+        /** 
+         * 最后，返回传入的参数object。方法.each()调用jQuery.each()时，把当前jQuery对象作为参数object传入，
+         * 这里返回该参数，以支持链式语法。
+         */
         return object;
       },
 
@@ -1041,10 +1269,37 @@
       },
 
       // arg is for internal usage only
+      /**
+       * @description
+       * 静态方法 jQuery.map() 对数组中的每个元素或对象的每个属性调用一个回调函数，并将回调函数的返回值放入一个新的数组中。
+       * 执行回调函数时传入两个参数：数组元素或属性值，元素下标或属性名。关键字 this 指向全局对象 window 。
+       * 回调函数的返回值会被放入新的数组中；如果返回一个数组，数组中将被扁平化后插入结果集；如果返回 null 或 undefined ，
+       * 则不会放入任何元素。
+       * 
+       * @param {*} elems
+       * 待遍历的数组或对象
+       * 
+       * @param {*} callback
+       * 回调函数，会在数组的每个元素或对象的每个属性上执行。
+       * 
+       * @param {*} arg
+       * 传入回调函数的参数，仅限于jQuery内部使用
+       * 
+       * @returns
+       */
       map: function (elems, callback, arg) {
         var value, key, ret = [],
           i = 0,
           length = elems.length,
+          /**
+           * 变量isArray表示参数elems是否是数组，以便决定遍历方式
+           * 
+           * 如果elems是jQuery对象，则变量isArray为true；
+           * 如果elem.length是数值型，且满足以下条件之一，则变量isArray为true：
+           *   1. length大于0，且elems[0]存在，且elems[ length -1 ]存在，即elems是一个类数组对象。
+           *   2. length等于0。
+           *   3. elems是真正的数组。
+           */
           // jquery objects are treated as arrays
           isArray = elems instanceof jQuery || length !== undefined && typeof length === "number" && ((length > 0 && elems[0] && elems[length - 1]) || length === 0 || jQuery.isArray(elems));
 
@@ -1069,6 +1324,7 @@
           }
         }
 
+        // 空数组[]上调用方法concat()扁平化结果集ret中的元素，并返回
         // Flatten any nested arrays
         return ret.concat.apply([], ret);
       },
