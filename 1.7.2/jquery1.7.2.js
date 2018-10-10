@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-10 15:36:11
+ * @Last Modified time: 2018-10-10 17:21:10
  */
 
 
@@ -164,6 +164,7 @@
       trim = String.prototype.trim,
       indexOf = Array.prototype.indexOf,
 
+      // 保存内建JavaScript类型
       // [[Class]] -> type pairs
       class2type = {};
 
@@ -980,29 +981,117 @@
       // See test/unit/core.js for details concerning isFunction.
       // Since version 1.3, DOM methods and functions like alert
       // aren't supported. They return false on IE (#2968).
+      /**
+       * @description
+       * 判断传入的参数是否是函数
+       * 
+       * @param {*} obj
+       * 需要判断的参数
+       * 
+       * @returns
+       * 参数是否为函数
+       */
       isFunction: function (obj) {
         return jQuery.type(obj) === "function";
       },
 
+      /**
+       * @description
+       * 判断传入的参数是否是数组
+       * 首先判断 Array.isArray 函数是否存在，如果存在则使用 Array.isArray 判断，
+       * 如果不存在则使用自定义函数
+       * 
+       * @param {*} obj
+       * 需要判断的参数
+       * 
+       * @returns
+       * 参数是否为数组
+       */
       isArray: Array.isArray || function (obj) {
         return jQuery.type(obj) === "array";
       },
 
+      /**
+       * @description
+       * 方法 jQuery.isWindow(obj) 用于判断传入的参数是否是 window 对象
+       * 通过检测是否存在特征属性 window 来实现，该属性是对窗口自身的引用
+       * @param {*} obj
+       * 传入检测的参数
+       * 
+       * @returns
+       * 参数是否为 window 对象
+       */
       isWindow: function (obj) {
         return obj != null && obj == obj.window;
       },
 
+      /**
+       * @description
+       * 方法 jQuery.isNumeric(value) 用于判断传入的参数是否是数字，或者看起来是否像数字
+       * 
+       * 先执行 parseFloat(obj) 尝试把参数 obj 解析为数字，然后用 isNaN() 判断解析结果是否是
+       * 合法数字，并用 isFinite() 判断参数 obj 是否是有限的。如果 parseFloat(obj) 的解析结果是合法数字，
+       * 并且参数 obj 是有限数字，则返回 true ；否则返回 false 。
+       * 
+       * 方法 parseFloat(string) 用于对字符串参数进行解析，并返回字符串中的第一个数字。在解析过程中，
+       * 如果遇到了不是有效数字的字符，解析就会停止并返回解析结果；如果字符串没有以一个有效的数字开头，
+       * 则返回 NaN ；如果传入的参数是对象，则自动调用该对象的方法 toString() ，得到该对象的字符串表示，然后再执行解析过程
+       * 
+       * @param {*} obj
+       * 传入检测的参数
+       * 
+       * @returns
+       * 参数是否是数字
+       * 
+       */
       isNumeric: function (obj) {
         return !isNaN(parseFloat(obj)) && isFinite(obj);
       },
 
+      /**
+       * @description
+       * 方法 jQuery.type(obj) 用于判断参数的内建 JavaScript 类型
+       * 如果参数是 undefined 或 null ，返回 "undefined" 或 "null" ；
+       * 如果参数是 JavaScript 内部对象，则返回对应的字符串名称；其他情况一律返回 "object" 。
+       * 
+       * @param {*} obj
+       * 需要判断的参数
+       * 
+       * @returns
+       * 参数的类型
+       */
       type: function (obj) {
+
+        /**
+         * 如果参数 obj 是 undefined 或 null ，通过 String(obj) 转换为对应的
+         * 原始字符串 "undefined" 或 "null"
+         * 
+         * 先借用 Object 的原型方法 toString() 获取 obj 的字符串表示，返回值的形
+         * 式为 [object class] ，其中的 class 是内部对象类，
+         * 先借用 Object 的原型方法 toString() 获取 obj 的字符串表示，
+         * 返回值的形式为 [object class] ，其中的 class 是内部对象类。
+         */
         return obj == null ?
           String(obj) :
           class2type[toString.call(obj)] || "object";
       },
 
+      /**
+       * @description
+       * 方法 jQuery.isPlainObject(object) 用于判断传入的参数是否是“纯粹”的对象，
+       * 即是否是用对象直接量 {} 或 new Object() 创建的对象
+       * 
+       * @param {*} obj
+       * 需要判断的参数
+       * 
+       * @returns
+       * 判断结果
+       */
       isPlainObject: function (obj) {
+        /**
+         * 首先检测传入参数是否为对象
+         * 
+         */
         // Must be an Object.
         // Because of IE, we also have to check the presence of the constructor property.
         // Make sure that DOM nodes and window objects don't pass through, as well
@@ -1010,6 +1099,26 @@
           return false;
         }
 
+        /**
+         * 现在已经确认参数是对象
+         * 然后检测是对象否为自定义构造函数创建
+         * 
+         * 如果对象 obj 含有属性 constructor ，且对象 obj 的属性 constructor 是非继承属性，
+         * 且对象obj的原型对象中没有属性isPrototypeOf，则判断 对象是由自定义构造函数创建的。
+         * 
+         * 由构造函数创建的对象都有一个 constructor 属性，默认引用了该对象的构造函数。默认情况下，
+         * 属性 constructor 继承自构造函数的原型对象。如果属性 constructor 是非继承属性，
+         * 说明该属性已经在自定义构造函数中被覆盖。
+         * 
+         * 如果对象 obj 没有属性constructor，则说明该对象必然是通过对象字面量 {} 创建的。
+         * 
+         * 属性 isPrototypeOf 是 Object 原型对象的特有属性，如果对象 obj 的原型对象中没有，
+         * 说明不是由构造函数 Object() 创建，而是由自定义构造函数创建
+         * 
+         * 执行以上检测时抛出了异常。在 IE 8/9中，在某些浏览器对象上执行以上检测时会抛出异常，也应该返回 false
+         * 
+         * 函数 hasOwn() 指向 Object.prototype.hasOwnProperty(property) ，用于检查对象是否含有执行名称的非继承属性
+         */
         try {
           // Not own constructor property must be Object
           if (obj.constructor &&
@@ -1022,16 +1131,41 @@
           return false;
         }
 
+
+
+        /**
+         * 参数现在已经确认为是一个不是有自定义函数创建的对象，
+         * 然后继续检测，对象的所有属性是否都为非继承属性，即对象不实现继承。
+         * 
+         * 执行 for-in 循环时，JavaScript 会先枚举非继承属性，再枚举从原型对象继承的属性。
+         * 如果对象 obj 的最后一个属性是非继承属性，则认为所有属性都是非继承属性，返回 true ；
+         * 如果最后一个属性是继承属性，即含有继承属性，则返回 false 。
+         */
+
         // Own properties are enumerated firstly, so to speed up,
         // if last one is own, then all properties are own.
-
         var key;
         for (key in obj) {}
 
         return key === undefined || hasOwn.call(obj, key);
       },
 
+      /**
+       * @description
+       * 方法 jQuery.isEmptyObject(object) 用于检测对象是否是空的（即不包含属性）。
+       * 
+       * @param {*} obj
+       * 传入检测的对象
+       * 
+       * @returns
+       * 检测结果
+       */
       isEmptyObject: function (obj) {
+        
+        /**
+         * for-in 循环会同时枚举非继承属性和从原型对象继承的属性，如果有，
+         * 则立即返回 false ，否则默认返回 true
+         */
         for (var name in obj) {
           return false;
         }
@@ -1487,6 +1621,7 @@
       browser: {}
     });
 
+    // 生成并保存内建 JavaScript 类型到 class2type
     // Populate the class2type map
     jQuery.each("Boolean Number String Function Array Date RegExp Object".split(" "), function (i, name) {
       class2type["[object " + name + "]"] = name.toLowerCase();
