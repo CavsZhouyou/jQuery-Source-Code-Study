@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-10 17:21:10
+ * @Last Modified time: 2018-10-11 17:34:31
  */
 
 
@@ -119,10 +119,18 @@
       // Match a standalone tag
       rsingleTag = /^<(\w+)\s*\/?>(?:<\/\1>)?$/,
 
+      /**
+       * 下列四个正则表达式检查字符串是否合法的正则和逻辑来自开源 JSON 解析库 json2.js
+       */
       // JSON RegExp
+
+      // 正则表达式 rvalidchars 用于检查字符串是否只含有指定的字符（"]"、","、":"、"{"、"}"、"\s"）
       rvalidchars = /^[\],:{}\s]*$/,
+      // 正则表达式 rvalidescape 用于匹配转义字符
       rvalidescape = /\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,
+      // 正则表达式 rvalidtokens 用于匹配有效值（字符串、true、false、null、数值）
       rvalidtokens = /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,
+      // 正则表达式 rvalidbraces 用于匹配正确的左方括号“[”
       rvalidbraces = /(?:^|:|,)(?:\s*\[)+/g,
 
       // Useragent RegExp
@@ -1161,7 +1169,7 @@
        * 检测结果
        */
       isEmptyObject: function (obj) {
-        
+
         /**
          * for-in 循环会同时枚举非继承属性和从原型对象继承的属性，如果有，
          * 则立即返回 false ，否则默认返回 true
@@ -1176,42 +1184,112 @@
         throw new Error(msg);
       },
 
+      /**
+       * @description 
+       * 方法 jQuery.parseJSON(data) 接受一个格式良好的 JSON 字符串，返回解析后的 JavaScript 对象。
+       * 如果传入残缺的 JSON 字符串可能导致程序抛出异常；如果不传入参数，或者传入空字符串、null、undefined，则返回 null。
+       * 
+       * @param {String} data
+       * 需要转换的字符串
+       * 
+       * @returns
+       * 转换后的 JSON 对象
+       */
       parseJSON: function (data) {
+
+        // 如果参数 data 不是字符串，或者可以转换为 false ，则返回 null
         if (typeof data !== "string" || !data) {
           return null;
         }
 
+        // 移除开头和末尾的空白符。在 IE 6/7中，如果不移除就不能正确的解析，
         // Make sure leading/trailing whitespace is removed (IE can't handle it)
         data = jQuery.trim(data);
 
+        /**
+         * 判断原生方法是否可用，如果可用，则使用原生方法 JSON.parse() 解析 JSON 字符串，并返回
+         * 
+         * JSON.parse() 解析 JSON 字符串为 JSON 对象
+         * JSON.stringify() 转换 JSON 对象为 JSON 字符串
+         * JSON 对象、JSON.parse()、JSON.stringify() 在 ECMAScript 5中被标准化，IE 8以下的浏览器不支持。
+         */
         // Attempt to parse using the native JSON parser first
         if (window.JSON && window.JSON.parse) {
           return window.JSON.parse(data);
         }
 
+        /**
+         * 检查字符串是否合法，如果合法，才会执行函数并返回执行结果
+         * 
+         * 检查字符串是否合法的正则和逻辑来自开源 JSON 解析库 json2.js，检测过程分为4步，用到了4个正则表达式：rvalidchars、
+         * rvalidescape、rvalidtokens、rvalidbraces。
+         * 
+         * 先利用正则 rvalidescape 把转义字符替换为“@”，为进行下一步替换做准备；
+         * 再利用正则 rvalidtokens 把字符串、true、false、null、数值替换为“]”；
+         * 然后利用 rvalidbraces 删除正确的左方括号；
+         * 
+         * 经过转换后，最后检查剩余字符是否只包含"]"、","、":"、"{"、"}"、"\s"，如果只包含这些字符，那么认为 JSON 字符串是合法的。
+         */
         // Make sure the incoming data is actual JSON
         // Logic borrowed from http://json.org/json2.js
         if (rvalidchars.test(data.replace(rvalidescape, "@")
             .replace(rvalidtokens, "]")
             .replace(rvalidbraces, ""))) {
 
+          // 通过构造函数 Function() 创建函数对象，然后执行，传入字符串参数作为执行的主体，相当于直接返回一个对象
           return (new Function("return " + data))();
 
         }
+
+        // 如果浏览器不支持 JSON.parse() ，或者 JSON 字符串不合法，则在最后抛出一个异常
         jQuery.error("Invalid JSON: " + data);
       },
 
       // Cross-browser xml parsing
+      /**
+       * @description
+       * 方法 jQuery.parseXML(data) 接受一个格式良好的 XML 字符串，返回解析后的 XML 文档
+       * 
+       * @param {String} data
+       * 需要解析的字符串
+       * 
+       * @returns
+       * 解析后的 XML 文档
+       */
       parseXML: function (data) {
+
+        // 如果参数 data 不是字符串，或者可以转换为 false ，则返回 null
         if (typeof data !== "string" || !data) {
           return null;
         }
         var xml, tmp;
         try {
+          /**
+           * 先尝试用标准解析器 DOMParser 解析。DOMParser 在 HTML5 中标准化，可以将 XML 或 HTML 字符串
+           * 解析为一个 DOM 文档。解析时，首先要创建一个 DOMParser 对象，然后使用它的方法 parseFromString() 
+           * 来解析 XML 或 HTML 字符串。
+           * 
+           * DOMParser.parseFromString(DOMString str,SupportedType type)
+           * 参数str：待解析的 XML 或 HTML 字符串
+           * 参数type：支持的类型有"text/html"、"text/xml"、"application/xml"、"application/xhtml+xml"、"image/svg+xml"
+           * 返回一个解析后的新创建的文档对象
+           * 
+           * 在 IE 以外的浏览器中，如果解析失败，方法 parseFromString() 不会抛出任何异常，只会返回一个包含了错误信息的文档对象
+           * 因此需要在后面检查解析后的文档中是否包含 <parsererror> 节点，如果包含则表示解析失败，抛出一个更易读的异常。
+           * 
+           * 在 IE 9+ 中，如果解析失败，则会抛出异常。如果抛出异常，在 catch 块中设置 xml 为 undefined ，然后抛出一个更易读的异常。
+           */
           if (window.DOMParser) { // Standard
             tmp = new DOMParser();
             xml = tmp.parseFromString(data, "text/xml");
           } else { // IE
+
+            /**
+             * IE 9 以下的浏览器不支持 DOMParser ，需要使用微软的 XML 解析器 Microsoft.XMLDOM 解析。解析步骤依次为：
+             * 创建一个空的 XML 文档对象，设该文档对象为同步加载，调用方法 loadXML() 解析 XML 字符串。
+             * 如果解析成功，方法 loadXML() 会返回 true ，解析结果存放在创建的 XML 文档对象中；如果解析失败，
+             * 方法 loadXML ()会返回 false（不会抛出异常），并设置文档根节点 documentElement 为 null 。
+             */
             xml = new ActiveXObject("Microsoft.XMLDOM");
             xml.async = "false";
             xml.loadXML(data);
@@ -1219,9 +1297,20 @@
         } catch (e) {
           xml = undefined;
         }
+
+        /**
+         * 如果解析失败，则抛出一个更易读的异常。如果满足以下条件之一，则认为解析失败：
+         * 
+         * 1. 在 IE 9+ 中，通过标准 XML 解析器 DOMParser 解析失败，此时 !xml 为 true。
+         * 2. 在 IE 9 以下的浏览器中，通过微软的 XML 解析器 Microsoft.XMLDOM 解析失败，此时 !xml.documentElement 为 true。
+         * 3. 在其他浏览器中，通过标准 XML 解析器 DOMParser 解析失败，此时 xml.getElementsByTagName("parsererror").length 
+         *    可以转换为 true
+         */
         if (!xml || !xml.documentElement || xml.getElementsByTagName("parsererror").length) {
           jQuery.error("Invalid XML: " + data);
         }
+
+        // 如果解析成功，则返回解析结果
         return xml;
       },
 
