@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-12 17:26:48
+ * @Last Modified time: 2018-10-12 17:43:05
  */
 
 
@@ -1720,7 +1720,7 @@
           /**
            * 变量isArray表示参数elems是否是数组，以便决定遍历方式
            * 
-           * 如果elems是jQuery对象，则变量isArray为true；
+           * 如果 elems 是 jQuery 对象，则变量 isArray 为 true；
            * 如果elem.length是数值型，且满足以下条件之一，则变量isArray为true：
            *   1. length大于0，且elems[0]存在，且elems[ length -1 ]存在，即elems是一个类数组对象。
            *   2. length等于0。
@@ -1755,12 +1755,37 @@
         return ret.concat.apply([], ret);
       },
 
+      /**
+       * 属性 jQuery.guid 是一个全局计数器，用于 jQuery 事件模块和缓存模块。在 jQuery 事件模块中，
+       * 每个事件监听函数会被设置一个 guid 属性，用来唯一标识这个函数；在缓存模块中，通过在 DOM 元素上
+       * 附加一个唯一标识，来关联该元素和该元素对应的缓存。属性 jQuery.guid 初始值为1，使用时自增1，
+       */
       // A global GUID counter for objects
       guid: 1,
 
       // Bind a function to a context, optionally partially applying any
       // arguments.
+      /**
+       * @description
+       * 方法 jQuery.proxy(function,context) 接受一个函数，返回一个新函数，新函数总是持有特定的上下文。这个方法有两种用法：
+       * 1. jQuery.proxy(function,context)
+       *    参数 function 是将被改变上下文的函数，参数 context 是上下文。指定参数 function 的上下文始终为参数 content 。
+       * 2. jQuery.proxy(context,name)
+       *    参数 name 是参数 context 的属性。指定参数 name 对应的函数的上下文始终为参数 context 。
+       * @param {*} fn
+       * 将被改变上下文的函数
+       * 
+       * @param {*} context
+       * 指定的上下文
+       * 
+       * @returns
+       * 创建的代理函数
+       */
       proxy: function (fn, context) {
+        /**
+         * 修正参数 fn 和 contex t。如果第二个参数是字符串，说明参数格式是 jQuery.proxy(context,name) ，修正为
+         * jQuery.proxy(fn,context)。
+         */
         if (typeof context === "string") {
           var tmp = fn[context];
           context = fn;
@@ -1769,19 +1794,28 @@
 
         // Quick check to determine if target is callable, in the spec
         // this throws a TypeError, but we will just return undefined.
+        // 如果参数 fn 不是函数，则返回 undefined 。
         if (!jQuery.isFunction(fn)) {
           return undefined;
         }
 
         // Simulated bind
+        // 获取传入的多余参数
         var args = slice.call(arguments, 2),
           proxy = function () {
             return fn.apply(context, args.concat(slice.call(arguments)));
           };
 
+        /**
+         * 为代理函数设置与原始函数相同的唯一标识 guid 。如果原始函数没有，则重新分配一个。
+         * 相同的唯一标识将代理函数和原始函数关联了起来。例如，在 jQuery 事件系统中，如果为
+         * DOM 元素绑定了事件监听函数的代理函数，当移除事件时，即使传入的是原始函数，jQuery
+         * 也能通过唯一标识 guid 移除正确的函数。
+         */
         // Set the guid of unique handler to the same of original handler, so it can be removed
         proxy.guid = fn.guid = fn.guid || proxy.guid || jQuery.guid++;
-
+        
+        // 返回创建的代理函数
         return proxy;
       },
 
