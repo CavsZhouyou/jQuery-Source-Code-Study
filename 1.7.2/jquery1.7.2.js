@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-12 16:21:54
+ * @Last Modified time: 2018-10-12 16:29:53
  */
 
 
@@ -1367,9 +1367,12 @@
        * @description
        * 方法 jQuery.camelCase(string) 转换连字符式的字符串为驼峰式，用于 CSS 模块和数据缓存模块
        * 
-       * 先用正则 rmsPrefix 匹配前缀 “-ms-”，如果有则修正为 "ms-"；然后用正则 rdashAlpha 匹配连
-       * 字符“-”和其后的第一个字母或数字，并用字符串方法 replace() 和函数 fcamelCase() 把匹配部分
-       * 替换为对应的大写字母或数字
+       * 先用正则 rmsPrefix 匹配前缀 “-ms-”，如果有则修正为 "ms-"；这么做是因为在 IE 中，连字符式的
+       * 样式名前缀 "-ms-" 对应小写的 "ms" ，而不是驼峰式的 "Ms" 。例如，"-ms-transform"对应"msTransform"
+       * 而不是 "MsTransform" 。在 IE 以外的浏览器中，连字符式的样式名则可以正确地转换为驼峰式，例如，
+       * "-moz-transform" 对应 "MozTransform"
+       * 然后用正则 rdashAlpha 匹配连字符字符“-”和其后的第一个字母或数字，并用字符串方法 replace() 
+       * 和函数 fcamelCase() 把匹配部分替换为对应的大写字母或数字
        * 
        * @param {String} string
        * 需要转换的字符串
@@ -1381,6 +1384,24 @@
         return string.replace(rmsPrefix, "ms-").replace(rdashAlpha, fcamelCase);
       },
 
+      /**
+       * @description
+       * 方法 jQuery.nodeName(elem,name) 用于检查 DOM 元素的节点名称（即属性 nodeName ）与指定的值
+       * 是否相等，检查时忽略大小写。
+       * 
+       * DOM 元素的属性 nodeName 返回该元素的节点名称；对于 HTML 文档，始终返回其大写形式；对于 XML 文档，
+       * 因为 XML 文档区分大小写，所以返回值与源代码中的形式一致。
+       * 
+       * @param {*} elem
+       * 检查的 DOM 元素
+       * 
+       * @param {String} name
+       * 节点名称
+       * 
+       * @returns
+       * 是否相等结果
+       * 
+       */
       nodeName: function (elem, name) {
         return elem.nodeName && elem.nodeName.toUpperCase() === name.toUpperCase();
       },
