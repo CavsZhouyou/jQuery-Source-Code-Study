@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-11 17:34:31
+ * @Last Modified time: 2018-10-12 16:11:07
  */
 
 
@@ -1319,6 +1319,31 @@
       // Evaluates a script in a global context
       // Workarounds based on findings by Jim Driscoll
       // http://weblogs.java.net/blog/driscoll/archive/2009/09/08/eval-javascript-global-context
+      /**
+       * @description
+       * 方法 jQuery.globalEval(code) 用于在全局作用域中执行 JavaScript 代码
+       * 
+       * 在 IE 中，可以调用方法 execScript() 让 JavaScript 代码在全局作用域中执行；在其他浏览器中，
+       * 则需要在一个自调用匿名函数中调用 eval() 执行 JavaScript 代码，自调用匿名函数确保了执行环境是全局作用域。
+       * 
+       * 方法 execScript() 在全局作用域中按照指定的脚本语言执行脚本代码，默认语言是 Jscript ，没有返回值。
+       * Chrome 的早期版本曾支持方法 execScript() ，现已不支持
+       * 
+       * execScript(code,language)
+       * 参数code：待执行的脚本代码
+       * 参数 language ：脚本语言，可选值有 JavaScript、JavaScript1.1、JavaScript1.2、JavaScript1.3、
+       * Jscript、VBS、VBScript，默认是 Jscript
+       * 
+       * 方法 eval() 在调用它的作用域中计算或执行 JavaScript 代码。如果 JavaScript 代码是一条表达式，则计算
+       * 并返回计算结果；如果含有一条或多条 JavaScript 语句，则执行这些语句，如果最后一条语句有返回值，则返回这
+       * 个值，否则返回 undefined 。
+       * 
+       * eval(code)
+       * 参数 code ：待执行的 JavaScript 表达式或语句
+       * 
+       * @param {String} data
+       * 需要执行的代码
+       */
       globalEval: function (data) {
         if (data && rnotwhite.test(data)) {
           // We use execScript on Internet Explorer
