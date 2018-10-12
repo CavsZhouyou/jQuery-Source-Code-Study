@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-12 16:37:39
+ * @Last Modified time: 2018-10-12 17:26:48
  */
 
 
@@ -1521,17 +1521,48 @@
         },
 
       // results is for internal usage only
+      /**
+       * @description
+       * 方法 jQuery.makeArray(obj) 可以将一个类数组对象转换为真正的数组。在 jQuery 内部，还可以为
+       * 方法 jQuery.makeArray() 传入第二个参数，这样，第一个参数中的元素将被合并入第二个参数，最后会
+       * 返回第二个参数，此时返回值的类型不一定是真正的数组。
+       * 
+       * @param {*} array
+       * 待转换对象，可以是任何类型
+       * 
+       * @param {*} results
+       * 仅在 jQuery 内部使用。如果传入参数 results ，则在该参数上添加元素
+       * 
+       * @returns
+       * 返回转换结果
+       * 
+       */
       makeArray: function (array, results) {
+
+        // 如果传入了参数 results 则把该参数作为返回值，否则新建一个空数组作为返回值
         var ret = results || [];
 
+        // 过滤参数 array 是 null 、 undefined 的情况
         if (array != null) {
           // The window, strings (and functions) also have 'length'
           // Tweaked logic slightly to handle Blackberry 4.7 RegExp issues #6930
           var type = jQuery.type(array);
 
+          /**
+           * 如果参数 array 满足以下条件之一，则认为该参数不是数组，也不是类数组对象，调用数组方法 push() 
+           * 把该参数插入返回值 ret 的末尾：
+           * 1. 参数 array 没有属性 length 。
+           * 2. 参数 array 是字符串，属性 length 返回字符串中的字符个数。
+           * 3. 参数 array 是 window 对象，属性 length 返回窗口中的框架（frame、iframe）个数。
+           * 4. 参数 array 是正则对象，在B lackberry（黑莓）4.7 中，正则对象也有 length 属性。
+           */
           if (array.length == null || type === "string" || type === "function" || type === "regexp" || jQuery.isWindow(array)) {
+
+            // ret 不一定是真正的数组，返回值 ret 的类型取决于 result 参数的类型。
             push.call(ret, array);
           } else {
+
+            // 如果参数 array 是数组或类数组对象，调用方法 jQuery.merge() 把该参数合并到返回值 ret 中。
             jQuery.merge(ret, array);
           }
         }
@@ -1539,15 +1570,38 @@
         return ret;
       },
 
+      /**
+       * @description
+       * 方法 jQuery.inArray(elem, array, i) 在数组中查找指定的元素并返回其下标，未找到则返回-1。
+       * 
+       * 结合使用按位非运算符（～）和逻辑非运算符（!）把 jQuery.inArray() 的返回值转换为布尔型
+       * !!~jQuery.inArray(elem,array)
+       * 如果 elem 可以匹配 array 中的某个元素，则该表达式的值为 true
+       * 如果 elem 匹配不到 array 中的元素，则该表达式的值为 false
+       * 
+       * @param {*} elem
+       * 要查找的值。
+       * 
+       * @param {*} array
+       * 数组，将遍历这个数组来查找参数 value 在其中的下标。
+       * 
+       * @param {*} i
+       * 指定开始查找的位置，默认是0即查找整个数组。
+       * 
+       * @returns
+       * 查找元素在数组中的下标
+       */
       inArray: function (elem, array, i) {
         var len;
 
         if (array) {
           if (indexOf) {
+            // 如果浏览器支持数组方法 indexOf() ，则调用它并返回下标。该方法在 ECMAScript 5 中被标准化。
             return indexOf.call(array, elem, i);
           }
 
           len = array.length;
+          // 修正下标参数
           i = i ? i < 0 ? Math.max(0, len + i) : i : 0;
 
           for (; i < len; i++) {
@@ -1561,40 +1615,82 @@
         return -1;
       },
 
+      /**
+       * @description
+       * 方法 jQuery.merge(first,second) 用于合并两个数组的元素到第一个数组中。
+       * 
+       * 方法 jQuery.merge() 的合并行为是破坏性的，将第二个数组中的元素添加到第一个数组中后，第一个数组就被改变了。
+       * 
+       * @param {*} first
+       * 数组或类数组对象，即必须含有整型（或可以转换为整型）属性 length
+       * 
+       * @param {*} second
+       * 可以是数组、类数组对象或任何含有连续整型属性的对象。
+       * 
+       * @returns
+       */
       merge: function (first, second) {
         var i = first.length,
           j = 0;
 
+        // 如果参数 second 的属性 length 是数值类型，则把该参数当作数组处理
         if (typeof second.length === "number") {
           for (var l = second.length; j < l; j++) {
             first[i++] = second[j];
           }
 
         } else {
+          /**
+           * 如果参数 second 没有属性 length ，或者属性 length 不是数值类型，
+           * 则把该参数当作含有连续整型（或可以转换为整型）属性的对象，例如，{ 0:'a',1:'b'}，
+           * 把其中的非 undefined 元素逐个插入参数 first 中。
+           */
           while (second[j] !== undefined) {
             first[i++] = second[j++];
           }
         }
 
+        // 修正 first.length 。因为参数 first 可能不是真正的数组，所以需要手动维护属性 length 的值
         first.length = i;
 
         return first;
       },
 
+      /**
+       * @description
+       * 方法 jQuery.grep(elems, callback, inv)用于查找数组中满足过滤函数的元素，原数组不会受影响。
+       * 
+       * @param {Array} elems
+       * 待遍历查找的数组。
+       * 
+       * @param {Function} callback
+       * 过滤每个元素的函数，执行时被传入两个参数：当前元素和它的下标。该函数应该返回一个布尔值。
+       * 
+       * @param {Boolean} inv
+       * 如果参数 inv 是 false 或未传入，方法 jQuery.grep() 会返回一个满足回调函数的元素数组；
+       * 如果参数 inv 是 true ，则返回一个不满足回调函数的元素数组。
+       * 
+       * @returns
+       * 过滤数组
+       * 
+       */
       grep: function (elems, callback, inv) {
         var ret = [],
           retVal;
+        // 修正 inv 为 Boolean 类型
         inv = !!inv;
 
         // Go through the array, only saving the items
         // that pass the validator function
         for (var i = 0, length = elems.length; i < length; i++) {
+          // 修正回调函数的返回值为 Boolean 类型
           retVal = !!callback(elems[i], i);
           if (inv !== retVal) {
             ret.push(elems[i]);
           }
         }
 
+        // 返回结果数组
         return ret;
       },
 
