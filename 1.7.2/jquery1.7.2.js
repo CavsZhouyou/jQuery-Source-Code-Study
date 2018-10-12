@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-12 16:11:07
+ * @Last Modified time: 2018-10-12 16:21:54
  */
 
 
@@ -140,7 +140,13 @@
       rmozilla = /(mozilla)(?:.*? rv:([\w.]+))?/,
 
       // Matches dashed string for camelizing
+      /**
+       * 正则表达式 rdashAlpha 用于匹配字符串中连字符“-”和其后的第一个字母或数字。如果连字符“-”后是字母，
+       * 则匹配部分会被替换为对应的大写字母；如果连字符“-”后是数字，则会删掉连字符“-”，保留数字。
+       */
       rdashAlpha = /-([a-z]|[0-9])/ig,
+
+      // 正则表达式 rmsPrefix 用于匹配字符串中前缀"-ms-"，匹配部分会被替换为"ms-"。
       rmsPrefix = /^-ms-/,
 
       // Used by jQuery.camelCase as callback to replace()
@@ -1357,6 +1363,20 @@
 
       // Convert dashed to camelCase; used by the css and data modules
       // Microsoft forgot to hump their vendor prefix (#9572)
+      /**
+       * @description
+       * 方法 jQuery.camelCase(string) 转换连字符式的字符串为驼峰式，用于 CSS 模块和数据缓存模块
+       * 
+       * 先用正则 rmsPrefix 匹配前缀 “-ms-”，如果有则修正为 "ms-"；然后用正则 rdashAlpha 匹配连
+       * 字符“-”和其后的第一个字母或数字，并用字符串方法 replace() 和函数 fcamelCase() 把匹配部分
+       * 替换为对应的大写字母或数字
+       * 
+       * @param {String} string
+       * 需要转换的字符串
+       * 
+       * @returns
+       * 转换后的结果
+       */
       camelCase: function (string) {
         return string.replace(rmsPrefix, "ms-").replace(rdashAlpha, fcamelCase);
       },
