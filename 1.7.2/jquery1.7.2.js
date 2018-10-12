@@ -4,7 +4,7 @@
  * @TodoList: 无
  * @Date: 2018-10-06 17:27:03 
  * @Last Modified by: zhouyou@werun
- * @Last Modified time: 2018-10-12 16:29:53
+ * @Last Modified time: 2018-10-12 16:37:39
  */
 
 
@@ -1495,16 +1495,26 @@
         return object;
       },
 
+
+      /**
+       * 方法 jQuery.trim(str) 用于移除字符串开头和结尾的空白符
+       */
       // Use native String.trim function wherever possible
       trim: trim ?
+        // 如果浏览器支持 String.prototype.trim() 则使用原生方法
         function (text) {
+          // 如果传入的参数是 null 或 undefined ，则返回空字符串；
           return text == null ?
             "" :
             trim.call(text);
         } :
-
+        /**
+         * 如果不支持，则先调用方法 toString ()得到参数 text 的字符串表示，然后调用方法 replace() 
+         * 把正则 trimLeft 和 trimRight 匹配到的空白符替换为空字符串
+         */
         // Otherwise use our own trimming functionality
         function (text) {
+          // 如果传入的参数是 null 或 undefined ，则返回空字符串；
           return text == null ?
             "" :
             text.toString().replace(trimLeft, "").replace(trimRight, "");
@@ -1793,9 +1803,13 @@
       jQuery.browser.safari = true;
     }
 
+    // 在 IE 9 以下的浏览器中，\s 不匹配不间断空格 \xA0，需要为正则 trimLeft 和 trimRight 加上“\xA0”
     // IE doesn't match non-breaking spaces with \s
     if (rnotwhite.test("\xA0")) {
+      // 正则表达式 trimLeft 用于匹配字符串开头的空白符
       trimLeft = /^[\s\xA0]+/;
+
+      // 正则表达式 trimRight 用于匹配字符串结尾的空白符。
       trimRight = /[\s\xA0]+$/;
     }
 
